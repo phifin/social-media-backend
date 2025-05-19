@@ -20,11 +20,7 @@ const storageVideo = new CloudinaryStorage({
 
 const storage = multer.memoryStorage();
 const uploadSetupImage = multer({ storage: storage });
-
 const uploadSetupVideo = multer({ storage: storage});
-
-
-
 const uploadImageAsync = promisify(uploadSetupImage.single('file'));
 const uploadVideoAsync = promisify(uploadSetupVideo.single('video'));
 
