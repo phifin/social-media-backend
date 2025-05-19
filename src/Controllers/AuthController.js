@@ -1,4 +1,5 @@
 import User from '../Models/user.js';
+import PrivacyUser from '../Models/privacyUser.js';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (userId) => {
@@ -9,19 +10,28 @@ const AuthController = {
   register: async (req, res) => {
     try {
       const { email, password, username } = req.body;
-
+  
       const existingUser = await User.findOne({ email });
-      if (existingUser) return res.status(400).json({ message: 'Email already in use' });
-
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+  
       const user = new User({ email, password, username });
-      await user.save();
-
+      await user.save(); 
+  
+      const privacyUser = new PrivacyUser({ userId: user._id });
+      await privacyUser.save(); 
+  
       const token = generateToken(user._id);
-      res.status(201).json({ user: { ...user._doc, password: undefined }, token });
+      res.status(201).json({
+        user: { ...user._doc, password: undefined },
+        token,
+      });
     } catch (err) {
       res.status(500).json({ message: 'Registration failed', error: err.message });
     }
   },
+  
 
   login: async (req, res) => {
     try {

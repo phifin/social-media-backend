@@ -5,6 +5,7 @@ import connectDB from './Config/config.js';
 import authRoutes from './Routes/AuthRoutes.js'; 
 import userRoutes from './Routes/UserRoutes.js';
 import FileRouter from './Routes/FileRoutes.js';
+import PrivacyUserRouter from './Routes/PrivacyRoutes.js';
 
 config();
 connectDB();
@@ -17,5 +18,6 @@ app.use(json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/files', FileRouter);
+app.use('/api/privacy', PrivacyUserRouter)
 
 export default app;
