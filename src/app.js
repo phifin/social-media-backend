@@ -11,6 +11,7 @@ import GroupChatRouter from './Routes/GroupChatRoutes.js';
 import GroupChatMessageRouter from './Routes/GroupChatMessageRoutes.js';
 import PostRoutes from './Routes/PostRoutes.js'
 import CommentRoutes from './Routes/CommentRoutes.js'
+import CommunityRoutes from './Routes/CommunityRoutes.js'
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from '../swagger.js';
 
@@ -32,5 +33,6 @@ app.use('/api/groupchat', GroupChatRouter);
 app.use('/api/groupchatmessage', GroupChatMessageRouter);
 app.use('/api/posts', PostRoutes);
 app.use('/api/comments', CommentRoutes);
+app.use('/api/community', CommunityRoutes);
 
 export default app;

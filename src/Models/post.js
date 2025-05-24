@@ -6,7 +6,7 @@ const PostSchema = new mongoose.Schema({
   images: [String],
   video: String,
   tags: [String],
-  taggedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  taggedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }],
   location: String,
   privacy: {
     type: String,
@@ -19,7 +19,9 @@ const PostSchema = new mongoose.Schema({
   savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: Date,
-  isDeleted: { type: Boolean, default: false }
+  isDeleted: { type: Boolean, default: false },
+  community: { type: mongoose.Schema.Types.ObjectId, ref: 'Community', required: false },
+  isApproved: { type: Boolean, default: false }
 });
 
 export default mongoose.model('Post', PostSchema);
