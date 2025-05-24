@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Private Chat Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>Test Private Chat</h2>
+
+  <div>
+    <label>Token:</label>
+    <input type="text" id="token" placeholder="JWT Token" style="width: 400px">
+    <button onclick="connectSocket()">Connect</button>
+  </div>
+
+  <div id="chat-section" style="display:none; margin-top: 20px;">
+    <label>To User ID:</label>
+    <input type="text" id="toUserId" placeholder="Recipient User ID">
+
+    <label>Message:</label>
+    <input type="text" id="messageInput" placeholder="Enter message">
+    <button onclick="sendPrivateMessage()">Send</button>
+
+    <h3>Messages:</h3>
+    <ul id="messages"></ul>
+  </div>
+
+  <script>
+    let socket;
+
+    function connectSocket() {
+      const token = document.getElementById("token").value;
+
+      socket = io("http://localhost:3000", {
+        auth: {
+          token
+        }
+      });
+      socket.on("connect", () => {
+        console.log("Connected:", socket.id);
+        document.getElementById("chat-section").style.display = "block";
+      });
+
+      socket.on("private_message", (msg) => {
+        const li = document.createElement("li");
+        li.textContent = `[From ${msg.from}]: ${msg.content}`;
+        document.getElementById("messages").appendChild(li);
+      });
+
+      socket.on("connect_error", (err) => {
+        alert("Connection failed: " + err.message);
+      });
+    }
+
+    function sendPrivateMessage() {
+      const to = document.getElementById("toUserId").value;
+      const content = document.getElementById("messageInput").value;
+
+      socket.emit("private_message", {
+        to,
+        content
+      });
+
+      const li = document.createElement("li");
+      li.textContent = `[To ${to}]: ${content}`;
+      document.getElementById("messages").appendChild(li);
+
+      document.getElementById("messageInput").value = "";
+    }
+  </script>
+</body>
+</html>
