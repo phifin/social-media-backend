@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Group Chat</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>Group Chat Tester</h2>
+
+  <label>
+    Your JWT Token:
+    <input type="text" id="token" style="width: 400px;" />
+  </label>
+  <br /><br />
+
+  <label>
+    Group ID:
+    <input type="text" id="groupId" />
+  </label>
+  <br /><br />
+
+  <label>
+    Message:
+    <input type="text" id="message" />
+  </label>
+  <br /><br />
+
+  <button onclick="connectSocket()">Connect</button>
+  <button onclick="sendGroupMessage()">Send Group Message</button>
+
+  <h3>Messages:</h3>
+  <div id="chatBox" style="border: 1px solid black; width: 600px; height: 300px; overflow-y: scroll;"></div>
+
+  <script>
+    let socket = null;
+
+    function connectSocket() {
+      const token = document.getElementById('token').value;
+
+      socket = io("http://localhost:3000", {
+        auth: { token },
+        transports: ["websocket"] // dùng websocket thay vì polling
+      });
+
+      socket.on("connect", () => {
+        console.log("✅ Connected to server with ID:", socket.id);
+        appendMessage("✅ Connected to group chat server!");
+      });
+
+      socket.on("group_message", (data) => {
+        console.log("📩 Group Message Received:", data);
+        appendMessage(`[${data.groupId}] ${data.from}: ${data.content}`);
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("❌ Connection failed:", err.message);
+        alert("Connection failed: " + err.message);
+      });
+    }
+
+    function sendGroupMessage() {
+      const groupId = document.getElementById('groupId').value;
+      const content = document.getElementById('message').value;
+
+      if (!socket || !socket.connected) {
+        alert("❗ Please connect to the socket server first.");
+        return;
+      }
+
+      socket.emit("group_message", {
+        groupId,
+        content,
+        type: "text"
+      });
+
+      appendMessage(`[You -> ${groupId}]: ${content}`);
+      document.getElementById('message').value = '';
+    }
+
+    function appendMessage(msg) {
+      const box = document.getElementById('chatBox');
+      const p = document.createElement('p');
+      p.textContent = msg;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+</body>
+</html>
