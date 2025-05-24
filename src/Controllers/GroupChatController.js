@@ -2,10 +2,10 @@ import GroupChat from "../Models/groupChat.js";
 
 export const createGroup = async (req, res) => {
   try {
-    const { name, members } = req.body;
+    const { name, imageGroupChat, members } = req.body;
     const admin = req.userId;
 
-    const group = new GroupChat({ name, admin, members: [admin, ...members] });
+    const group = new GroupChat({ name, imageGroupChat, admin, members: [admin, ...members] });
     await group.save();
 
     res.status(201).json({ message: 'Group created', group });

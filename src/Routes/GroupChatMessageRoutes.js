@@ -6,7 +6,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/group-messages/{groupId}:
+ * /api/groupchatmessage/{groupId}:
  *   get:
  *     summary: Lấy danh sách tin nhắn trong nhóm
  *     tags: [Group Chat Message Controller]

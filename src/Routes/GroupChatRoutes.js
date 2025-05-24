@@ -6,7 +6,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/groups:
+ * /api/groupchat:
  *   post:
  *     summary: Tạo nhóm chat mới
  *     tags: [Group Chat Controller]
@@ -38,7 +38,7 @@ router.post('/', AuthMiddleware, createGroup);
 
 /**
  * @swagger
- * /api/groups/my-groups:
+ * /api/groupchat/my-groups:
  *   get:
  *     summary: Lấy danh sách các nhóm mà người dùng là thành viên
  *     tags: [Group Chat Controller]
@@ -54,7 +54,7 @@ router.get('/my-groups', AuthMiddleware, getUserGroups);
 
 /**
  * @swagger
- * /api/groups/my-groups/{groupId}/add-members:
+ * /api/groupchat/my-groups/{groupId}/add-members:
  *   put:
  *     summary: Thêm thành viên vào nhóm
  *     tags: [Group Chat Controller]
