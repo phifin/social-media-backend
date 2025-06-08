@@ -1,17 +1,50 @@
 import Comment from '../Models/comment.js';
 import Post from '../Models/post.js';
 
-// Create comment on post
+// let ioInstance;
+// export const setIoInstance = (io) => {
+//   ioInstance = io;
+// };
+// export const createComment = async (req, res) => {
+//   try {
+//     const { content, parentComment } = req.body;
+//     const postId = req.params.postId;
+
+//     const newComment = new Comment({
+//       post: postId,
+//       content,
+//       author: req.userId,
+//       parentComment: parentComment || null
+//     });
+
+//     await newComment.save();
+
+//     // Add comment reference to post
+//     await Post.findByIdAndUpdate(postId, { $push: { comments: newComment._id } });
+
+//     res.status(201).json(newComment);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+let ioInstance;
+export const setIoInstance = (io) => {
+  ioInstance = io;
+};
+
 export const createComment = async (req, res) => {
   try {
-    const { content, parentComment } = req.body;
+    const { content, parentComment, imageUrl, video } = req.body;
     const postId = req.params.postId;
 
     const newComment = new Comment({
       post: postId,
       content,
       author: req.userId,
-      parentComment: parentComment || null
+      parentComment: parentComment || null,
+      imageUrl: imageUrl || null,
+      video: video || null
     });
 
     await newComment.save();

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Comment Realtime Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+  <h2>Test Realtime Comment (with Optional Image)</h2>
+
+  <div>
+    <label>Token:</label>
+    <input type="text" id="token" placeholder="JWT Token" style="width: 400px">
+    <button onclick="connectSocket()">Connect</button>
+  </div>
+
+  <div id="comment-section" style="display:none; margin-top: 20px;">
+    <label>Post ID:</label>
+    <input type="text" id="postId" placeholder="Post ID">
+
+    <label>Content:</label>
+    <input type="text" id="content" placeholder="Enter comment content">
+
+    <label>Image (optional):</label>
+    <input type="file" id="image">
+
+    <button onclick="sendComment()">Send Comment</button>
+
+    <h3>Comments:</h3>
+    <ul id="comments"></ul>
+  </div>
+
+  <script>
+    let socket;
+    let jwtToken = "";
+
+    function connectSocket() {
+      jwtToken = document.getElementById("token").value;
+
+      socket = io("http://localhost:3000", {
+        auth: { token: jwtToken }
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected:", socket.id);
+        document.getElementById("comment-section").style.display = "block";
+      });
+
+      socket.on("new_comment", (comment) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${comment.content}</strong>` +
+          (comment.imageUrl ? `<br><img src="${comment.imageUrl}" width="150">` : '');
+        document.getElementById("comments").appendChild(li);
+      });
+
+      socket.on("connect_error", (err) => {
+        alert("Connection failed: " + err.message);
+      });
+    }
+
+    async function uploadImage(file) {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("http://localhost:3000/api/files/upload-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${jwtToken}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error("Upload failed: " + error);
+      }
+      const data = response.text();
+     
+      return data; 
+    }
+
+    async function sendComment() {
+      const postId = document.getElementById("postId").value;
+      const content = document.getElementById("content").value;
+      const imageFile = document.getElementById("image").files[0];
+
+      let imageUrl = null;
+
+      try {
+        if (imageFile) {
+          imageUrl = await uploadImage(imageFile);
+        }
+
+        socket.emit("send_comment", {
+          postId,
+          content,
+          imageUrl
+        });
+
+        // Display immediately
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${content}</strong>` +
+          (imageUrl ? `<br><img src="${imageUrl}" width="150">` : '');
+        document.getElementById("comments").appendChild(li);
+
+        document.getElementById("content").value = "";
+        document.getElementById("image").value = "";
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
