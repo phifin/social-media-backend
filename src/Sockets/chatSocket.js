@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import Message from '../Models/message.js';
+import Comment from '../Models/comment.js';
 import GroupChatMessage from '../Models/groupChatMessage.js';
 
 const connectedUsers = new Map(); // userId -> socket.id
@@ -24,12 +25,14 @@ const chatSocket = (io) => {
     console.log(`User connected: ${userId} (${socket.id})`);
 
     // ===== PRIVATE CHAT =====
-    socket.on('private_message', async ({ to, content, type }) => {
+    socket.on('private_message', async ({ to, content, type, imageUrl }) => {
+
       const message = await Message.create({
         from: userId,
         to,
         content,
-        type: type || 'text'
+        type: type || 'text',
+        imageUrl: imageUrl || null
       });
 
       const toSocketId = connectedUsers.get(to);
@@ -73,6 +76,27 @@ const chatSocket = (io) => {
 
 
     // COMMENT
+    socket.on('send_comment', async ({ postId, content, imageUrl }) => {
+      try {
+        const savedComment = await Comment.create({
+          post: postId,
+          author: userId,
+          content: content || null,
+          imageUrl: imageUrl || null
+        });
+    
+        io.to(`post_${postId}`).emit('new_comment', savedComment);
+      } catch (err) {
+        console.error("Error saving comment:", err);
+      }
+    });
+    socket.on('join_post', (postId) => {
+      socket.join(`post_${postId}`);
+    });
+
+    socket.on('leave_post', (postId) => {
+      socket.leave(`post_${postId}`);
+    });
 
     socket.on('disconnect', () => {
       connectedUsers.delete(userId);

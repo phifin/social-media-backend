@@ -16,10 +16,10 @@ export const createPost = async (req, res) => {
 export const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate('author', 'username avatar')
+      .populate('author', 'username')
       .populate({
         path: 'comments',
-        populate: { path: 'author', select: 'username avatar' }
+        populate: { path: 'author', select: 'username' }
       });
 
     if (!post || post.isDeleted) return res.status(404).json({ message: 'Post not found' });
@@ -36,7 +36,7 @@ export const getAllPosts = async (req, res) => {
     const posts = await Post.find({ isDeleted: false })
       .sort({ createdAt: -1 })
       .limit(20)
-      .populate('author', 'username avatar');
+      .populate('author', 'username');
 
     res.json(posts);
   } catch (err) {
