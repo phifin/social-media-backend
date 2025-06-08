@@ -17,7 +17,7 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               image:
  *                 type: string
  *                 format: binary
  *     responses:
@@ -42,7 +42,7 @@ router.post('/upload-image', handleImageUpload, uploadImage)
  *           schema:
  *             type: object
  *             properties:
- *               image:
+ *               video:
  *                 type: string
  *                 format: binary
  *     responses:

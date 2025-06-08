@@ -12,7 +12,7 @@ const chatSocket = (io) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.userId = decoded.id;
-      next();
+      next(); 
     } catch (err) {
       next(new Error("Invalid token"));
     }
@@ -39,7 +39,6 @@ const chatSocket = (io) => {
     });
 
     // ===== GROUP CHAT =====
-
     // Khi người dùng vào phòng group
     socket.on('join_group', (groupId) => {
       socket.join(groupId); // Tham gia phòng group
@@ -71,6 +70,9 @@ const chatSocket = (io) => {
         createdAt: message.createdAt
       });
     });
+
+
+    // COMMENT
 
     socket.on('disconnect', () => {
       connectedUsers.delete(userId);

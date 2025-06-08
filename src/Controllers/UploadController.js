@@ -51,15 +51,9 @@ export const uploadImage = async(req, res) => {
           if (!req.file) {
             return res.status(400).json({ error: 'Khong tim thay file dc chon' });
           }
-          console.log(req.file)
           const uploadStream = await cloudinary.uploader.upload_stream((error, result) => {
                if (error) {
-                    // console.error(error);
-                    return res.status(200).json({ 
-                         success: true,
-                         message: "Tải ảnh thành công",
-                         url: error.url
-                    });
+                    return res.send(error.url)
                }
                console.log(result)
           });
@@ -71,6 +65,7 @@ export const uploadImage = async(req, res) => {
 }
 
 
+
 export const uploadVideo = async(req, res) => {
      try {
           if (!req.file) {
@@ -79,11 +74,7 @@ export const uploadVideo = async(req, res) => {
 
           console.log(req.file)
           const upload = cloudinary.uploader.upload_stream(req.file.path, {resource_type: 'video'}, (error, result) => {
-               res.status(200).json({
-                    success: true,
-                    message: 'Tai video thanh cong',
-                    url: result.secure_url
-               })
+               res.send(result.secure_url)
           })
           res.json({
                success: true,
