@@ -16,10 +16,10 @@ export const createPost = async (req, res) => {
 export const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate('author', 'username')
+      .populate('author', 'username avatar')
       .populate({
         path: 'comments',
-        populate: { path: 'author', select: 'username' }
+        populate: { path: 'author', select: 'username avatar' }
       });
 
     if (!post || post.isDeleted) return res.status(404).json({ message: 'Post not found' });
