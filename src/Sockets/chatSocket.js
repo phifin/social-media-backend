@@ -25,13 +25,12 @@ const chatSocket = (io) => {
     console.log(`User connected: ${userId} (${socket.id})`);
 
     // ===== PRIVATE CHAT =====
-    socket.on('private_message', async ({ to, content, type, imageUrl }) => {
+    socket.on('private_message', async ({ to, content,imageUrl }) => {
 
       const message = await Message.create({
         from: userId,
         to,
         content,
-        type: type || 'text',
         imageUrl: imageUrl || null
       });
 
@@ -55,12 +54,12 @@ const chatSocket = (io) => {
     });
 
     // Gửi tin nhắn trong group
-    socket.on('group_message', async ({ groupId, content, type }) => {
+    socket.on('group_message', async ({ groupId, content, imageUrl  }) => {
       const message = await GroupChatMessage.create({
         groupId,
         sender: userId,
         content,
-        type: type || 'text'
+        imageUrl: imageUrl || null
       });
 
       // Gửi đến tất cả socket trong phòng group đó (kể cả sender)
@@ -69,7 +68,8 @@ const chatSocket = (io) => {
         groupId,
         sender: userId,
         content,
-        type: message.type,
+        // type: message.type,
+        imageUrl: message.imageUrl,
         createdAt: message.createdAt
       });
     });

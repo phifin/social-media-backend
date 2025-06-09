@@ -2,7 +2,10 @@ import express from 'express';
 import {
   createComment,
   toggleLikeComment,
-  deleteComment
+  deleteComment,
+  getCommentsByPostId,
+  getCommentById,
+  getReplies
 } from '../Controllers/CommentController.js';
 import AuthMiddleware from '../Middlewares/authMiddleware.js';
 
@@ -90,5 +93,69 @@ router.post('/:id/like', AuthMiddleware, toggleLikeComment);
  *         description: Không tìm thấy bình luận
  */
 router.delete('/:id', AuthMiddleware, deleteComment);
+
+
+
+/**
+ * @swagger
+ * /api/comments/post/{postId}:
+ *   get:
+ *     summary: Lấy tất cả comment của bài viết
+ *     tags: [Comment Controller]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách comment
+ *       500:
+ *         description: Lỗi server
+ */
+router.get('/post/:postId', getCommentsByPostId);
+
+/**
+ * @swagger
+ * /api/comments/detail/{id}:
+ *   get:
+ *     summary: Lấy chi tiết bình luận
+ *     tags: [Comment Controller]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thông tin bình luận
+ *       404:
+ *         description: Không tìm thấy
+ */
+router.get('/detail/:id', AuthMiddleware, getCommentById);
+
+
+/**
+ * @swagger
+ * /api/comments/{id}/replies:
+ *   get:
+ *     summary: Lấy danh sách phản hồi (reply) của một comment
+ *     tags: [Comment Controller]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách reply
+ */
+router.get('/:id/replies', AuthMiddleware, getReplies);
+
+
+
 
 export default router;

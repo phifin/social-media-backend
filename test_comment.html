@@ -1,114 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Comment Realtime Test</title>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Comment Test with Image/Video Support</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 700px; margin: 0 auto; }
+        h2, h3 { color: #333; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="file"], button {
+            width: calc(100% - 10px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #17a2b8; /* Màu xanh nước biển cho nút comment */
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #138496; }
+        .connect-button {
+            background-color: #007bff;
+        }
+        .connect-button:hover {
+            background-color: #0056b3;
+        }
+        #comment-section {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        #comments {
+            list-style: none;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+        #comments li {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            background-color: #e6f7ff;
+            word-wrap: break-word;
+            float: left; /* Mặc định comment từ người khác */
+            clear: both;
+            max-width: 80%;
+        }
+        #comments li.sent {
+            text-align: right;
+            background-color: #d1e7dd;
+            float: right; /* Comment của mình nằm bên phải */
+        }
+        #comments li img, #comments li video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-top: 5px;
+            border-radius: 4px;
+        }
+        .file-upload-preview {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .file-upload-preview img, .file-upload-preview video {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: cover; /* Đảm bảo video/ảnh preview không bị bóp méo */
+            border-radius: 4px;
+        }
+        .file-upload-preview button {
+            width: auto;
+            padding: 5px 10px;
+            background-color: #dc3545;
+        }
+    </style>
 </head>
 <body>
-  <h2>Test Realtime Comment (with Optional Image)</h2>
+    <div class="container">
+        <h2>Test Comment Functionality</h2>
 
-  <div>
-    <label>Token:</label>
-    <input type="text" id="token" placeholder="JWT Token" style="width: 400px">
-    <button onclick="connectSocket()">Connect</button>
-  </div>
+        <div>
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="JWT Token" style="width: calc(100% - 120px);">
+            <button onclick="connectSocket()" class="connect-button">Connect Socket</button>
+            <p>Your User ID: <strong id="myUserId">N/A</strong></p>
+        </div>
 
-  <div id="comment-section" style="display:none; margin-top: 20px;">
-    <label>Post ID:</label>
-    <input type="text" id="postId" placeholder="Post ID">
+        <div id="comment-section" style="display:none; margin-top: 20px;">
+            <label for="postId">Post ID:</label>
+            <input type="text" id="postId" placeholder="Enter Post ID to comment on">
+            <button onclick="joinPost()">Join Post Room</button>
+            <button onclick="leavePost()" style="background-color: #ffc107; color: #333;">Leave Post Room</button>
 
-    <label>Content:</label>
-    <input type="text" id="content" placeholder="Enter comment content">
+            <label for="commentInput">Comment:</label>
+            <input type="text" id="commentInput" placeholder="Enter your comment">
 
-    <label>Image (optional):</label>
-    <input type="file" id="image">
+            <label for="fileUpload">Upload Image/Video:</label>
+            <input type="file" id="fileUpload" accept="image/*,video/*" onchange="previewFile(event)">
+            <div id="file-preview" class="file-upload-preview" style="display:none;">
+                <span>Selected: <span id="preview-filename"></span></span>
+                <button onclick="clearFile()">Clear</button>
+            </div>
 
-    <button onclick="sendComment()">Send Comment</button>
+            <button onclick="sendComment()">Send Comment</button>
 
-    <h3>Comments:</h3>
-    <ul id="comments"></ul>
-  </div>
+            <h3>Comments:</h3>
+            <ul id="comments"></ul>
+        </div>
+    </div>
 
-  <script>
-    let socket;
-    let jwtToken = "";
+    <script>
+        let socket;
+        // API upload ảnh (giữ nguyên)
+        const uploadImageApiUrl = "http://localhost:3000/api/files/upload-image";
+        // API upload video (cần có nếu bạn muốn hỗ trợ video)
+        // Giả sử bạn có một API riêng cho video: http://localhost:3000/api/files/upload-video
+        // Nếu API upload ảnh của bạn cũng xử lý video, thì giữ nguyên uploadImageApiUrl
+        const uploadVideoApiUrl = "http://localhost:3000/api/files/upload-video"; 
+        
+        let selectedFile = null; // Biến để lưu file ảnh/video đã chọn
+        let currentPostId = null; // Biến để theo dõi post hiện tại
+        let myUserId = null; // Biến để lưu userId của chính mình
 
-    function connectSocket() {
-      jwtToken = document.getElementById("token").value;
+        // --- Socket.IO Connection ---
+        function connectSocket() {
+            const token = document.getElementById("token").value;
 
-      socket = io("http://localhost:3000", {
-        auth: { token: jwtToken }
-      });
+            socket = io("http://localhost:3000", {
+                auth: {
+                    token
+                }
+            });
 
-      socket.on("connect", () => {
-        console.log("Connected:", socket.id);
-        document.getElementById("comment-section").style.display = "block";
-      });
+            socket.on("connect", () => {
+                console.log("Connected:", socket.id);
+                document.getElementById("comment-section").style.display = "block";
+                // Lấy userId của mình từ server
+                fetch('http://localhost:3000/api/auth/me', { // Giả định bạn có API để lấy thông tin user
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    myUserId = data.userId;
+                    document.getElementById("myUserId").textContent = myUserId;
+                    console.log("My User ID:", myUserId);
+                })
+                .catch(err => {
+                    console.error("Failed to get user ID:", err);
+                    myUserId = "UNKNOWN";
+                });
+            });
 
-      socket.on("new_comment", (comment) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${comment.content}</strong>` +
-          (comment.imageUrl ? `<br><img src="${comment.imageUrl}" width="150">` : '');
-        document.getElementById("comments").appendChild(li);
-      });
+            socket.on("new_comment", (comment) => {
+                const li = document.createElement("li");
+                // So sánh comment.author với myUserId
+                if (myUserId && comment.author === myUserId) {
+                    li.className = 'sent';
+                }
 
-      socket.on("connect_error", (err) => {
-        alert("Connection failed: " + err.message);
-      });
-    }
+                li.innerHTML = `<strong>[Post ${comment.post}] From ${comment.author}</strong>: ${comment.content || ''}`;
+                if (comment.imageUrl) {
+                    const img = document.createElement("img");
+                    img.src = comment.imageUrl;
+                    li.appendChild(img);
+                }
+                if (comment.video) { // Giả định server trả về trường 'video' nếu có
+                    const video = document.createElement("video");
+                    video.src = comment.video;
+                    video.controls = true;
+                    li.appendChild(video);
+                }
+                document.getElementById("comments").appendChild(li);
+                document.getElementById("comments").scrollTop = document.getElementById("comments").scrollHeight;
+            });
 
-    async function uploadImage(file) {
-      const formData = new FormData();
-      formData.append("image", file);
+            socket.on("connect_error", (err) => {
+                alert("Connection failed: " + err.message);
+                console.error("Socket connection error:", err);
+            });
 
-      const response = await fetch("http://localhost:3000/api/files/upload-image", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${jwtToken}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error("Upload failed: " + error);
-      }
-      const data = response.text();
-     
-      return data; 
-    }
-
-    async function sendComment() {
-      const postId = document.getElementById("postId").value;
-      const content = document.getElementById("content").value;
-      const imageFile = document.getElementById("image").files[0];
-
-      let imageUrl = null;
-
-      try {
-        if (imageFile) {
-          imageUrl = await uploadImage(imageFile);
+            socket.on("disconnect", () => {
+                console.log("Disconnected from server.");
+            });
         }
 
-        socket.emit("send_comment", {
-          postId,
-          content,
-          imageUrl
-        });
+        // --- Post Room Management ---
+        function joinPost() {
+            const postId = document.getElementById("postId").value;
+            if (postId && socket) {
+                if (currentPostId) {
+                    socket.emit('leave_post', currentPostId);
+                    console.log(`Left previous post room: ${currentPostId}`);
+                }
+                socket.emit('join_post', postId);
+                currentPostId = postId;
+                console.log(`Joined post room: ${postId}`);
+                document.getElementById("comments").innerHTML = ''; // Clear comments when joining new post
+                alert(`Joined post room: ${postId}`);
+            } else {
+                alert("Please enter a Post ID and ensure socket is connected.");
+            }
+        }
 
-        // Display immediately
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${content}</strong>` +
-          (imageUrl ? `<br><img src="${imageUrl}" width="150">` : '');
-        document.getElementById("comments").appendChild(li);
+        function leavePost() {
+            if (currentPostId && socket) {
+                socket.emit('leave_post', currentPostId);
+                console.log(`Left post room: ${currentPostId}`);
+                alert(`Left post room: ${currentPostId}`);
+                currentPostId = null;
+            } else {
+                alert("Not currently in any post room or socket not connected.");
+            }
+        }
 
-        document.getElementById("content").value = "";
-        document.getElementById("image").value = "";
-      } catch (error) {
-        alert("Error: " + error.message);
-      }
-    }
-  </script>
+        // --- File Upload & Preview (Image/Video) ---
+        function previewFile(event) {
+            const file = event.target.files[0];
+            const previewDiv = document.getElementById("file-preview");
+            const previewFilenameSpan = document.getElementById("preview-filename");
+            
+            // Clear previous preview elements
+            while (previewDiv.firstChild) {
+                if (previewDiv.firstChild.tagName !== 'SPAN' && previewDiv.firstChild.tagName !== 'BUTTON') {
+                    previewDiv.removeChild(previewDiv.firstChild);
+                } else if (previewDiv.firstChild.tagName === 'SPAN' && previewDiv.firstChild.id === 'preview-filename') {
+                     // Keep the filename span
+                } else if (previewDiv.firstChild.tagName === 'BUTTON' && previewDiv.firstChild.onclick.toString().includes('clearFile()')) {
+                    // Keep the clear button
+                } else {
+                    previewDiv.removeChild(previewDiv.firstChild);
+                }
+            }
+
+
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    let mediaElement;
+                    if (file.type.startsWith('image/')) {
+                        mediaElement = document.createElement("img");
+                    } else if (file.type.startsWith('video/')) {
+                        mediaElement = document.createElement("video");
+                        mediaElement.controls = false; // Tắt controls cho preview
+                        mediaElement.muted = true; // Tắt tiếng cho preview
+                        mediaElement.autoplay = true; // Tự động phát cho preview
+                        mediaElement.loop = true; // Lặp lại cho preview
+                    }
+                    if (mediaElement) {
+                        mediaElement.src = e.target.result;
+                        mediaElement.style.maxWidth = "50px";
+                        mediaElement.style.maxHeight = "50px";
+                        mediaElement.style.borderRadius = "4px";
+                        mediaElement.style.objectFit = "cover";
+                        
+                        // Thêm element preview vào đầu previewDiv
+                        previewDiv.insertBefore(mediaElement, previewFilenameSpan);
+                    }
+
+                    previewFilenameSpan.textContent = file.name;
+                    previewDiv.style.display = "flex";
+                };
+                reader.readAsDataURL(file);
+            } else {
+                clearFile();
+            }
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById("fileUpload").value = '';
+            const previewDiv = document.getElementById("file-preview");
+            // Remove all dynamic media elements (img/video)
+            Array.from(previewDiv.children).forEach(child => {
+                if (child.tagName === 'IMG' || child.tagName === 'VIDEO') {
+                    previewDiv.removeChild(child);
+                }
+            });
+            document.getElementById("preview-filename").textContent = '';
+            document.getElementById("file-preview").style.display = "none";
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                return { imageUrl: null, videoUrl: null };
+            }
+
+            const formData = new FormData();
+            let uploadUrl;
+
+            if (selectedFile.type.startsWith('image/')) {
+                formData.append('image', selectedFile); // Tên trường 'image'
+                uploadUrl = uploadImageApiUrl;
+            } else if (selectedFile.type.startsWith('video/')) {
+                formData.append('video', selectedFile); // Tên trường 'video' (nếu API riêng)
+                uploadUrl = uploadVideoApiUrl; // Hoặc uploadImageApiUrl nếu API của bạn xử lý cả 2
+            } else {
+                alert("Unsupported file type selected.");
+                return { imageUrl: null, videoUrl: null };
+            }
+
+            try {
+                const response = await fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+                }
+                const fileUrl = await response.text(); // API trả về URL dạng text
+
+                if (selectedFile.type.startsWith('image/')) {
+                    return { imageUrl: fileUrl, videoUrl: null };
+                } else {
+                    return { imageUrl: null, videoUrl: fileUrl };
+                }
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                alert("Failed to upload file: " + error.message);
+                return { imageUrl: null, videoUrl: null };
+            }
+        }
+
+        // --- Send Comment ---
+        async function sendComment() {
+            const postId = document.getElementById("postId").value;
+            const content = document.getElementById("commentInput").value;
+            let imageUrl = null;
+            let videoUrl = null;
+
+            if (!postId) {
+                alert("Please enter a Post ID to comment on.");
+                return;
+            }
+            if (!socket || !socket.connected) {
+                alert("Socket is not connected. Please connect first.");
+                return;
+            }
+
+            // Kiểm tra và upload file nếu có
+            if (selectedFile) {
+                const uploadResult = await uploadFile();
+                imageUrl = uploadResult.imageUrl;
+                videoUrl = uploadResult.videoUrl;
+                if (!imageUrl && !videoUrl) {
+                    return; // Nếu upload thất bại, không gửi comment
+                }
+            }
+            
+            // Đảm bảo có nội dung hoặc file
+            if (!content && !imageUrl && !videoUrl) {
+                alert("Please enter a comment or select an image/video to send.");
+                return;
+            }
+
+            // Gửi comment qua Socket.IO
+            socket.emit("send_comment", {
+                postId,
+                content,
+                imageUrl, // Gửi URL ảnh (nếu có)
+                videoUrl  // Gửi URL video (nếu có)
+            });
+
+            // Sau khi emit, KHÔNG tự động thêm comment vào DOM ở đây nữa.
+            // Để server emit lại và frontend xử lý hiển thị TẤT CẢ comment từ server.
+
+            document.getElementById("commentInput").value = "";
+            clearFile(); // Xóa file đã chọn và preview
+        }
+    </script>
 </body>
 </html>

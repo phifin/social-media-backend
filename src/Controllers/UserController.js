@@ -2,11 +2,28 @@ import User from '../Models/user.js';
 import privacyUser from '../Models/privacyUser.js';
 
 const UserController = {
+  // getCurrentUser: async (req, res) => {
+  //   try {
+  //     const user = await User.findById(req.userId).select('-password');
+  //     if (!user) return res.status(404).json({ message: 'User not found' });
+  //     res.json(user);
+  //   } catch (err) {
+  //     res.status(500).json({ message: 'Server error', error: err.message });
+  //   }
+  // },
+
   getCurrentUser: async (req, res) => {
     try {
       const user = await User.findById(req.userId).select('-password');
       if (!user) return res.status(404).json({ message: 'User not found' });
-      res.json(user);
+  
+      const privacy = await privacyUser.findOne({ userId: req.userId })
+        .populate('friends', '_id username avatar')
+        .populate('following', '_id username avatar')
+        .populate('followers', '_id username avatar')
+        .populate('blocked', '_id username avatar');
+  
+      res.json({ user, privacy });
     } catch (err) {
       res.status(500).json({ message: 'Server error', error: err.message });
     }
@@ -66,16 +83,39 @@ const UserController = {
     }
   },
 
-  getUserById: async (req, res) => {
+  // getUserById: async (req, res) => {
+  //   try {
+  //     const user = await User.findById(req.params.id).select('-password');
+  //     if (!user) return res.status(404).json({ message: 'User not found' });
+  //     res.json(user);
+  //   } catch (err) {
+  //     res.status(500).json({ message: 'Error retrieving user', error: err.message });
+  //   }
+  // },
+
+  getUserById : async (req, res) => {
     try {
-      const user = await User.findById(req.params.id).select('-password');
+      const userId = req.params.id;
+  
+      const user = await User.findById(userId).select('-password');
       if (!user) return res.status(404).json({ message: 'User not found' });
-      res.json(user);
+  
+      const privacyUser = await privacyUser.findOne({ userId })
+        .select('-_id -__v') 
+        .populate('friends', 'username avatar')
+        .populate('following', 'username avatar')
+        .populate('followers', 'username avatar')
+        .populate('blocked', 'username avatar');
+  
+      res.json({
+        user,
+        privacy: privacyUser || {},
+      });
+  
     } catch (err) {
       res.status(500).json({ message: 'Error retrieving user', error: err.message });
     }
   },
-
   searchUsers: async (req, res) => {
     try {
       const { username } = req.query;

@@ -22,7 +22,6 @@ export const sendMessage = async (req, res) => {
         from,
         to,
         content,
-        type: type || "text"
       });
   
       res.status(201).json(message);
