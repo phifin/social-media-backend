@@ -1,73 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Private Chat Test</title>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Private Chat with Image Support</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 700px; margin: 0 auto; }
+        h2, h3 { color: #333; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="file"], button {
+            width: calc(100% - 10px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #0056b3; }
+        #chat-section {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        #messages {
+            list-style: none;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+        #messages li {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            background-color: #e6f7ff;
+            word-wrap: break-word; /* Để văn bản dài tự động xuống dòng */
+        }
+        #messages li.sent {
+            text-align: right;
+            background-color: #d1e7dd;
+        }
+        #messages li img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin-top: 5px;
+            border-radius: 4px;
+        }
+        .file-upload-preview {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .file-upload-preview img {
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 4px;
+        }
+        .file-upload-preview button {
+            width: auto;
+            padding: 5px 10px;
+            background-color: #dc3545;
+        }
+    </style>
 </head>
 <body>
-  <h2>Test Private Chat</h2>
+    <div class="container">
+        <h2>Test Private Chat</h2>
 
-  <div>
-    <label>Token:</label>
-    <input type="text" id="token" placeholder="JWT Token" style="width: 400px">
-    <button onclick="connectSocket()">Connect</button>
-  </div>
+        <div>
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="JWT Token" style="width: calc(100% - 120px);">
+            <button onclick="connectSocket()">Connect</button>
+        </div>
 
-  <div id="chat-section" style="display:none; margin-top: 20px;">
-    <label>To User ID:</label>
-    <input type="text" id="toUserId" placeholder="Recipient User ID">
+        <div id="chat-section" style="display:none; margin-top: 20px;">
+            <label for="toUserId">To User ID:</label>
+            <input type="text" id="toUserId" placeholder="Recipient User ID">
 
-    <label>Message:</label>
-    <input type="text" id="messageInput" placeholder="Enter message">
-    <button onclick="sendPrivateMessage()">Send</button>
+            <label for="messageInput">Message:</label>
+            <input type="text" id="messageInput" placeholder="Enter message">
 
-    <h3>Messages:</h3>
-    <ul id="messages"></ul>
-  </div>
+            <label for="imageUpload">Upload Image:</label>
+            <input type="file" id="imageUpload" accept="image/*" onchange="previewImage(event)">
+            <div id="image-preview" class="file-upload-preview" style="display:none;">
+                <img id="preview-img" src="" alt="Image Preview">
+                <span>Selected: <span id="preview-filename"></span></span>
+                <button onclick="clearImage()">Clear</button>
+            </div>
 
-  <script>
-    let socket;
+            <button onclick="sendPrivateMessage()">Send Message</button>
 
-    function connectSocket() {
-      const token = document.getElementById("token").value;
+            <h3>Messages:</h3>
+            <ul id="messages"></ul>
+        </div>
+    </div>
 
-      socket = io("http://localhost:3000", {
-        auth: {
-          token
+    <script>
+        let socket;
+        const uploadApiUrl = "http://localhost:3000/api/files/upload-image"; // API upload ảnh
+        let selectedImageFile = null; // Biến để lưu file ảnh đã chọn
+
+        // --- Socket.IO Connection ---
+        function connectSocket() {
+            const token = document.getElementById("token").value;
+
+            socket = io("http://localhost:3000", { // Thay đổi URL nếu server Socket.IO không ở đây
+                auth: {
+                    token
+                }
+            });
+
+            socket.on("connect", () => {
+                console.log("Connected:", socket.id);
+                document.getElementById("chat-section").style.display = "block";
+            });
+
+            socket.on("private_message", (msg) => {
+                const li = document.createElement("li");
+                li.textContent = `[From ${msg.from}]: ${msg.content || ''}`; // Đảm bảo hiển thị nội dung nếu có
+                if (msg.imageUrl) {
+                    const img = document.createElement("img");
+                    img.src = msg.imageUrl;
+                    li.appendChild(img);
+                }
+                document.getElementById("messages").appendChild(li);
+                // Cuộn xuống cuối tin nhắn
+                document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+            });
+
+            socket.on("connect_error", (err) => {
+                alert("Connection failed: " + err.message);
+                console.error("Socket connection error:", err);
+            });
+
+            socket.on("disconnect", () => {
+                console.log("Disconnected from server.");
+            });
         }
-      });
-      socket.on("connect", () => {
-        console.log("Connected:", socket.id);
-        document.getElementById("chat-section").style.display = "block";
-      });
 
-      socket.on("private_message", (msg) => {
-        const li = document.createElement("li");
-        li.textContent = `[From ${msg.from}]: ${msg.content}`;
-        document.getElementById("messages").appendChild(li);
-      });
+        // --- Image Upload & Preview ---
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedImageFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("preview-img").src = e.target.result;
+                    document.getElementById("preview-filename").textContent = file.name;
+                    document.getElementById("image-preview").style.display = "flex"; // Hiện preview
+                };
+                reader.readAsDataURL(file);
+            } else {
+                clearImage();
+            }
+        }
 
-      socket.on("connect_error", (err) => {
-        alert("Connection failed: " + err.message);
-      });
-    }
+        function clearImage() {
+            selectedImageFile = null;
+            document.getElementById("imageUpload").value = ''; // Xóa file đã chọn
+            document.getElementById("preview-img").src = '';
+            document.getElementById("preview-filename").textContent = '';
+            document.getElementById("image-preview").style.display = "none"; // Ẩn preview
+        }
 
-    function sendPrivateMessage() {
-      const to = document.getElementById("toUserId").value;
-      const content = document.getElementById("messageInput").value;
+        async function uploadImage() {
+            if (!selectedImageFile) {
+                return null; // Không có ảnh để upload
+            }
 
-      socket.emit("private_message", {
-        to,
-        content
-      });
+            const formData = new FormData();
+            // Tên trường 'image' phải khớp với tên bạn mong đợi ở backend (ví dụ: upload.single('image'))
+            formData.append('image', selectedImageFile); 
 
-      const li = document.createElement("li");
-      li.textContent = `[To ${to}]: ${content}`;
-      document.getElementById("messages").appendChild(li);
+            try {
+                // Sử dụng fetch API để gửi file
+                const response = await fetch(uploadApiUrl, {
+                    method: 'POST',
+                    body: formData,
+                    // Content-Type header sẽ được tự động thiết lập bởi trình duyệt khi dùng FormData
+                });
 
-      document.getElementById("messageInput").value = "";
-    }
-  </script>
+                if (!response.ok) {
+                    // Nếu API trả về lỗi (status code 4xx hoặc 5xx)
+                    const errorText = await response.text(); // Đọc response dạng text
+                    throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+                }
+
+                // API trả về URL dạng text trực tiếp, không phải JSON
+                const imageUrl = await response.text();
+                console.log("Image uploaded, URL:", imageUrl);
+                return imageUrl;
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                alert("Failed to upload image: " + error.message);
+                return null;
+            }
+        }
+
+        // --- Send Private Message ---
+        async function sendPrivateMessage() {
+            const to = document.getElementById("toUserId").value;
+            const content = document.getElementById("messageInput").value;
+            let imageUrl = null;
+
+            // Kiểm tra và upload ảnh nếu có
+            if (selectedImageFile) {
+                imageUrl = await uploadImage();
+                if (!imageUrl) {
+                    // Nếu upload ảnh thất bại, không gửi tin nhắn
+                    return;
+                }
+            }
+            
+            // Đảm bảo có nội dung hoặc ảnh
+            if (!content && !imageUrl) {
+                alert("Please enter a message or select an image to send.");
+                return;
+            }
+
+            // Gửi tin nhắn qua Socket.IO
+            socket.emit("private_message", {
+                to,
+                content,
+                imageUrl // Gửi URL ảnh kèm theo
+            });
+
+            // Hiển thị tin nhắn của chính mình ngay lập tức
+            const li = document.createElement("li");
+            li.className = 'sent'; // Thêm class để CSS định dạng tin nhắn đã gửi
+            li.textContent = `[To ${to}]: ${content || ''}`;
+            if (imageUrl) {
+                const img = document.createElement("img");
+                img.src = imageUrl;
+                li.appendChild(img);
+            }
+            document.getElementById("messages").appendChild(li);
+
+            // Reset input và ảnh đã chọn
+            document.getElementById("messageInput").value = "";
+            clearImage(); // Xóa ảnh đã chọn và preview
+            
+            // Cuộn xuống cuối tin nhắn
+            document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+        }
+    </script>
 </body>
 </html>
