@@ -141,18 +141,80 @@ router.get('/', UserController.getAllUsers);
  * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Lấy thông tin người dùng theo ID
- *     tags: [Users]
+ *     summary: Lấy thông tin chi tiết người dùng
+ *     tags:
+ *       - Users
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID người dùng
+ *         description: ID of the user to retrieve
  *     responses:
  *       200:
- *         description: Thông tin người dùng
+ *         description: Successfully retrieved user with privacy info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                     coverPhoto:
+ *                       type: string
+ *                     bio:
+ *                       type: string
+ *                     dateOfBirth:
+ *                       type: string
+ *                       format: date
+ *                     gender:
+ *                       type: string
+ *                       enum: [male, female, other]
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                 privacy:
+ *                   type: object
+ *                   properties:
+ *                     profilePrivacy:
+ *                       type: string
+ *                       enum: [public, friend, private]
+ *                     postPrivacy:
+ *                       type: string
+ *                       enum: [public, friend, private]
+ *                     friends:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserSummary'
+ *                     following:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserSummary'
+ *                     followers:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserSummary'
+ *                     blocked:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/UserSummary'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
  */
 router.get('/:id', UserController.getUserById);
 

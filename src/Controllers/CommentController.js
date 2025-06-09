@@ -96,3 +96,51 @@ export const deleteComment = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getCommentsByPostId = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+
+    const comments = await Comment.find({ post: postId, isDeleted: false })
+      .select('content author imageUrl video likes createdAt parentComment')
+      .sort({ createdAt: -1 }); 
+
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getCommentById = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.id)
+      .where({ isDeleted: false })
+      .populate('author', 'username avatar');
+
+    if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+    res.json(comment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+export const getReplies = async (req, res) => {
+  try {
+    const parentCommentId = req.params.id;
+    const replies = await Comment.find({
+      parentComment: parentCommentId,
+      isDeleted: false
+    })
+      .sort({ createdAt: 1 })
+      .populate('author', 'username avatar');
+
+    res.json(replies);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
