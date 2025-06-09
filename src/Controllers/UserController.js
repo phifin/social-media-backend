@@ -100,7 +100,7 @@ const UserController = {
       const user = await User.findById(userId).select('-password');
       if (!user) return res.status(404).json({ message: 'User not found' });
   
-      const privacyUser = await privacyUser.findOne({ userId })
+      const privacy = await privacyUser.findOne({ userId })
         .select('-_id -__v') 
         .populate('friends', 'username avatar')
         .populate('following', 'username avatar')
@@ -109,7 +109,7 @@ const UserController = {
   
       res.json({
         user,
-        privacy: privacyUser || {},
+        privacy: privacy || {},
       });
   
     } catch (err) {
