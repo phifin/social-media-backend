@@ -1,323 +1,346 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Group Chat Test with Image Support</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ... (CSS giữ nguyên) ... */
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 700px; margin: 0 auto; }
-        h2, h3 { color: #333; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="file"], button {
-            width: calc(100% - 10px);
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #28a745; /* Màu xanh lá cây cho nút group chat */
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover { background-color: #218838; }
-        .connect-button {
-            background-color: #007bff;
-        }
-        .connect-button:hover {
-            background-color: #0056b3;
-        }
-        #chat-section {
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-            margin-top: 20px;
-        }
-        #messages {
-            list-style: none;
-            padding: 0;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            padding: 10px;
-            background-color: #fafafa;
-        }
-        #messages li {
-            margin-bottom: 10px;
-            padding: 8px;
-            border-radius: 6px;
-            background-color: #e6f7ff;
-            word-wrap: break-word;
-            float: left; /* Mặc định tin nhắn từ người khác */
-            clear: both; /* Để mỗi tin nhắn nằm trên một dòng mới */
-            max-width: 80%; /* Giới hạn chiều rộng tin nhắn */
-        }
-        #messages li.sent {
-            text-align: right;
-            background-color: #d1e7dd;
-            float: right; /* Tin nhắn của mình nằm bên phải */
-        }
-        #messages li img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin-top: 5px;
-            border-radius: 4px;
-        }
-        .file-upload-preview {
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background-color: #f0f0f0;
-            padding: 8px;
-            border-radius: 4px;
-        }
-        .file-upload-preview img {
-            max-width: 50px;
-            max-height: 50px;
-            border-radius: 4px;
-        }
-        .file-upload-preview button {
-            width: auto;
-            padding: 5px 10px;
-            background-color: #dc3545;
-        }
+      /* ... (CSS giữ nguyên) ... */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      h2,
+      h3 {
+        color: #333;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type='text'],
+      input[type='file'],
+      button {
+        width: calc(100% - 10px);
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #28a745; /* Màu xanh lá cây cho nút group chat */
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #218838;
+      }
+      .connect-button {
+        background-color: #007bff;
+      }
+      .connect-button:hover {
+        background-color: #0056b3;
+      }
+      #chat-section {
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+        margin-top: 20px;
+      }
+      #messages {
+        list-style: none;
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #fafafa;
+      }
+      #messages li {
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 6px;
+        background-color: #e6f7ff;
+        word-wrap: break-word;
+        float: left; /* Mặc định tin nhắn từ người khác */
+        clear: both; /* Để mỗi tin nhắn nằm trên một dòng mới */
+        max-width: 80%; /* Giới hạn chiều rộng tin nhắn */
+      }
+      #messages li.sent {
+        text-align: right;
+        background-color: #d1e7dd;
+        float: right; /* Tin nhắn của mình nằm bên phải */
+      }
+      #messages li img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin-top: 5px;
+        border-radius: 4px;
+      }
+      .file-upload-preview {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: #f0f0f0;
+        padding: 8px;
+        border-radius: 4px;
+      }
+      .file-upload-preview img {
+        max-width: 50px;
+        max-height: 50px;
+        border-radius: 4px;
+      }
+      .file-upload-preview button {
+        width: auto;
+        padding: 5px 10px;
+        background-color: #dc3545;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h2>Test Group Chat</h2>
+      <h2>Test Group Chat</h2>
 
-        <div>
-            <label for="token">Token:</label>
-            <input type="text" id="token" placeholder="JWT Token" style="width: calc(100% - 120px);">
-            <button onclick="connectSocket()" class="connect-button">Connect Socket</button>
-            <p>Your User ID: <strong id="myUserId">N/A</strong></p>
+      <div>
+        <label for="token">Token:</label>
+        <input type="text" id="token" placeholder="JWT Token" style="width: calc(100% - 120px)" />
+        <button onclick="connectSocket()" class="connect-button">Connect Socket</button>
+        <p>Your User ID: <strong id="myUserId">N/A</strong></p>
+      </div>
+
+      <div id="chat-section" style="display: none; margin-top: 20px">
+        <label for="groupId">Group ID:</label>
+        <input type="text" id="groupId" placeholder="Enter Group ID" />
+        <button onclick="joinGroup()">Join Group</button>
+        <button onclick="leaveGroup()" style="background-color: #ffc107; color: #333">Leave Group</button>
+
+        <label for="messageInput">Message:</label>
+        <input type="text" id="messageInput" placeholder="Enter message" />
+
+        <label for="imageUpload">Upload Image:</label>
+        <input type="file" id="imageUpload" accept="image/*" onchange="previewImage(event)" />
+        <div id="image-preview" class="file-upload-preview" style="display: none">
+          <img id="preview-img" src="" alt="Image Preview" />
+          <span>Selected: <span id="preview-filename"></span></span>
+          <button onclick="clearImage()">Clear</button>
         </div>
 
-        <div id="chat-section" style="display:none; margin-top: 20px;">
-            <label for="groupId">Group ID:</label>
-            <input type="text" id="groupId" placeholder="Enter Group ID">
-            <button onclick="joinGroup()">Join Group</button>
-            <button onclick="leaveGroup()" style="background-color: #ffc107; color: #333;">Leave Group</button>
+        <button onclick="sendGroupMessage()">Send Group Message</button>
 
-            <label for="messageInput">Message:</label>
-            <input type="text" id="messageInput" placeholder="Enter message">
-
-            <label for="imageUpload">Upload Image:</label>
-            <input type="file" id="imageUpload" accept="image/*" onchange="previewImage(event)">
-            <div id="image-preview" class="file-upload-preview" style="display:none;">
-                <img id="preview-img" src="" alt="Image Preview">
-                <span>Selected: <span id="preview-filename"></span></span>
-                <button onclick="clearImage()">Clear</button>
-            </div>
-
-            <button onclick="sendGroupMessage()">Send Group Message</button>
-
-            <h3>Messages:</h3>
-            <ul id="messages"></ul>
-        </div>
+        <h3>Messages:</h3>
+        <ul id="messages"></ul>
+      </div>
     </div>
 
     <script>
-        let socket;
-        const uploadApiUrl = "http://localhost:3000/api/files/upload-image";
-        let selectedImageFile = null;
-        let currentGroupId = null;
-        let myUserId = null; // Biến để lưu userId của chính mình
+      let socket
+      const uploadApiUrl = 'http://192.168.79.239:3000/api/files/upload-image'
+      let selectedImageFile = null
+      let currentGroupId = null
+      let myUserId = null // Biến để lưu userId của chính mình
 
-        function connectSocket() {
-            const token = document.getElementById("token").value;
+      function connectSocket() {
+        const token = document.getElementById('token').value
 
-            socket = io("http://localhost:3000", {
-                auth: {
-                    token
-                }
-            });
+        socket = io('http://192.168.79.239:3000', {
+          auth: {
+            token
+          }
+        })
 
-            socket.on("connect", () => {
-                console.log("Connected:", socket.id);
-                document.getElementById("chat-section").style.display = "block";
-                // Lấy userId từ server sau khi kết nối thành công (nếu server gửi về)
-                // Hoặc, bạn có thể giải mã token ở frontend để lấy userId
-                // Ví dụ: decoded JWT token ở frontend để lấy userId, hoặc server gửi về.
-                // Để đơn giản, giả sử server gửi lại userId qua một event 'connected_user_info'
-                // Hoặc bạn có thể thêm socket.userId vào một biến global ở đây
-                fetch('http://localhost:3000/api/auth/me', { // Giả định bạn có API để lấy thông tin user
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    myUserId = data.userId; // Giả định API trả về { userId: '...' }
-                    document.getElementById("myUserId").textContent = myUserId;
-                    console.log("My User ID:", myUserId);
-                })
-                .catch(err => {
-                    console.error("Failed to get user ID:", err);
-                    myUserId = "UNKNOWN"; // Fallback nếu không lấy được
-                });
-            });
+        socket.on('connect', () => {
+          console.log('Connected:', socket.id)
+          document.getElementById('chat-section').style.display = 'block'
+          // Lấy userId từ server sau khi kết nối thành công (nếu server gửi về)
+          // Hoặc, bạn có thể giải mã token ở frontend để lấy userId
+          // Ví dụ: decoded JWT token ở frontend để lấy userId, hoặc server gửi về.
+          // Để đơn giản, giả sử server gửi lại userId qua một event 'connected_user_info'
+          // Hoặc bạn có thể thêm socket.userId vào một biến global ở đây
+          fetch('http://192.168.79.239:3000/api/auth/me', {
+            // Giả định bạn có API để lấy thông tin user
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              myUserId = data.userId // Giả định API trả về { userId: '...' }
+              document.getElementById('myUserId').textContent = myUserId
+              console.log('My User ID:', myUserId)
+            })
+            .catch((err) => {
+              console.error('Failed to get user ID:', err)
+              myUserId = 'UNKNOWN' // Fallback nếu không lấy được
+            })
+        })
 
-            socket.on("group_message", (msg) => {
-                const li = document.createElement("li");
-                // So sánh msg.sender với myUserId
-                if (myUserId && msg.sender === myUserId) {
-                    li.className = 'sent'; // Nếu là tin nhắn của mình
-                }
+        socket.on('group_message', (msg) => {
+          const li = document.createElement('li')
+          // So sánh msg.sender với myUserId
+          if (myUserId && msg.sender === myUserId) {
+            li.className = 'sent' // Nếu là tin nhắn của mình
+          }
 
-                li.innerHTML = `<strong>[Group ${msg.groupId}] From ${msg.sender}</strong>: ${msg.content || ''}`;
-                if (msg.imageUrl) {
-                    const img = document.createElement("img");
-                    img.src = msg.imageUrl;
-                    li.appendChild(img);
-                }
-                document.getElementById("messages").appendChild(li);
-                document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-            });
+          li.innerHTML = `<strong>[Group ${msg.groupId}] From ${msg.sender}</strong>: ${msg.content || ''}`
+          if (msg.imageUrl) {
+            const img = document.createElement('img')
+            img.src = msg.imageUrl
+            li.appendChild(img)
+          }
+          document.getElementById('messages').appendChild(li)
+          document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight
+        })
 
-            socket.on("connect_error", (err) => {
-                alert("Connection failed: " + err.message);
-                console.error("Socket connection error:", err);
-            });
+        socket.on('connect_error', (err) => {
+          alert('Connection failed: ' + err.message)
+          console.error('Socket connection error:', err)
+        })
 
-            socket.on("disconnect", () => {
-                console.log("Disconnected from server.");
-            });
+        socket.on('disconnect', () => {
+          console.log('Disconnected from server.')
+        })
+      }
+
+      // --- Group Management (Giữ nguyên) ---
+      function joinGroup() {
+        const groupId = document.getElementById('groupId').value
+        if (groupId && socket) {
+          if (currentGroupId) {
+            socket.emit('leave_group', currentGroupId)
+            console.log(`Left previous group: ${currentGroupId}`)
+          }
+          socket.emit('join_group', groupId)
+          currentGroupId = groupId
+          console.log(`Joined group: ${groupId}`)
+          document.getElementById('messages').innerHTML = ''
+          alert(`Joined group: ${groupId}`)
+        } else {
+          alert('Please enter a Group ID and ensure socket is connected.')
+        }
+      }
+
+      function leaveGroup() {
+        if (currentGroupId && socket) {
+          socket.emit('leave_group', currentGroupId)
+          console.log(`Left group: ${currentGroupId}`)
+          alert(`Left group: ${currentGroupId}`)
+          currentGroupId = null
+        } else {
+          alert('Not currently in any group or socket not connected.')
+        }
+      }
+
+      // --- Image Upload & Preview (Giữ nguyên) ---
+      function previewImage(event) {
+        const file = event.target.files[0]
+        if (file) {
+          selectedImageFile = file
+          const reader = new FileReader()
+          reader.onload = function (e) {
+            document.getElementById('preview-img').src = e.target.result
+            document.getElementById('preview-filename').textContent = file.name
+            document.getElementById('image-preview').style.display = 'flex'
+          }
+          reader.readAsDataURL(file)
+        } else {
+          clearImage()
+        }
+      }
+
+      function clearImage() {
+        selectedImageFile = null
+        document.getElementById('imageUpload').value = ''
+        document.getElementById('preview-img').src = ''
+        document.getElementById('preview-filename').textContent = ''
+        document.getElementById('image-preview').style.display = 'none'
+      }
+
+      async function uploadImage() {
+        if (!selectedImageFile) {
+          return null
         }
 
-        // --- Group Management (Giữ nguyên) ---
-        function joinGroup() {
-            const groupId = document.getElementById("groupId").value;
-            if (groupId && socket) {
-                if (currentGroupId) {
-                    socket.emit('leave_group', currentGroupId);
-                    console.log(`Left previous group: ${currentGroupId}`);
-                }
-                socket.emit('join_group', groupId);
-                currentGroupId = groupId;
-                console.log(`Joined group: ${groupId}`);
-                document.getElementById("messages").innerHTML = '';
-                alert(`Joined group: ${groupId}`);
-            } else {
-                alert("Please enter a Group ID and ensure socket is connected.");
-            }
+        const formData = new FormData()
+        formData.append('image', selectedImageFile)
+
+        try {
+          const response = await fetch(uploadApiUrl, {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(`Upload failed: ${response.status} - ${errorText}`)
+          }
+          const imageUrl = await response.text()
+          console.log('Image uploaded, URL:', imageUrl)
+          return imageUrl
+        } catch (error) {
+          console.error('Error uploading image:', error)
+          alert('Failed to upload image: ' + error.message)
+          return null
+        }
+      }
+
+      // --- Send Group Message ---
+      async function sendGroupMessage() {
+        const groupId = document.getElementById('groupId').value
+        const content = document.getElementById('messageInput').value
+        let imageUrl = null
+
+        if (!groupId) {
+          alert('Please enter a Group ID to send a message.')
+          return
+        }
+        if (!socket || !socket.connected) {
+          alert('Socket is not connected. Please connect first.')
+          return
         }
 
-        function leaveGroup() {
-            if (currentGroupId && socket) {
-                socket.emit('leave_group', currentGroupId);
-                console.log(`Left group: ${currentGroupId}`);
-                alert(`Left group: ${currentGroupId}`);
-                currentGroupId = null;
-            } else {
-                alert("Not currently in any group or socket not connected.");
-            }
+        // Kiểm tra và upload ảnh nếu có
+        if (selectedImageFile) {
+          imageUrl = await uploadImage()
+          if (!imageUrl) {
+            return
+          }
         }
 
-        // --- Image Upload & Preview (Giữ nguyên) ---
-        function previewImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                selectedImageFile = file;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById("preview-img").src = e.target.result;
-                    document.getElementById("preview-filename").textContent = file.name;
-                    document.getElementById("image-preview").style.display = "flex";
-                };
-                reader.readAsDataURL(file);
-            } else {
-                clearImage();
-            }
+        if (!content && !imageUrl) {
+          alert('Please enter a message or select an image to send.')
+          return
         }
 
-        function clearImage() {
-            selectedImageFile = null;
-            document.getElementById("imageUpload").value = '';
-            document.getElementById("preview-img").src = '';
-            document.getElementById("preview-filename").textContent = '';
-            document.getElementById("image-preview").style.display = "none";
-        }
+        socket.emit('group_message', {
+          groupId,
+          content,
+          imageUrl
+        })
 
-        async function uploadImage() {
-            if (!selectedImageFile) {
-                return null;
-            }
+        // Sau khi emit, KHÔNG tự động thêm tin nhắn vào DOM ở đây n  ữa.
+        // Để server emit lại và frontend xử lý hiển thị TẤT CẢ tin nhắn từ server.
+        // Điều này đảm bảo tính nhất quán và tránh trùng lặp.
 
-            const formData = new FormData();
-            formData.append('image', selectedImageFile);
-
-            try {
-                const response = await fetch(uploadApiUrl, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-                }
-                const imageUrl = await response.text();
-                console.log("Image uploaded, URL:", imageUrl);
-                return imageUrl;
-            } catch (error) {
-                console.error("Error uploading image:", error);
-                alert("Failed to upload image: " + error.message);
-                return null;
-            }
-        }
-
-        // --- Send Group Message ---
-        async function sendGroupMessage() {
-            const groupId = document.getElementById("groupId").value;
-            const content = document.getElementById("messageInput").value;
-            let imageUrl = null;
-
-            if (!groupId) {
-                alert("Please enter a Group ID to send a message.");
-                return;
-            }
-            if (!socket || !socket.connected) {
-                alert("Socket is not connected. Please connect first.");
-                return;
-            }
-
-            // Kiểm tra và upload ảnh nếu có
-            if (selectedImageFile) {
-                imageUrl = await uploadImage();
-                if (!imageUrl) {
-                    return;
-                }
-            }
-
-            if (!content && !imageUrl) {
-                alert("Please enter a message or select an image to send.");
-                return;
-            }
-
-            socket.emit("group_message", {
-                groupId,
-                content,
-                imageUrl
-            });
-
-            // Sau khi emit, KHÔNG tự động thêm tin nhắn vào DOM ở đây n  ữa.
-            // Để server emit lại và frontend xử lý hiển thị TẤT CẢ tin nhắn từ server.
-            // Điều này đảm bảo tính nhất quán và tránh trùng lặp.
-
-            document.getElementById("messageInput").value = "";
-            clearImage();
-            // Scroll to bottom sẽ được gọi trong socket.on("group_message")
-        }
+        document.getElementById('messageInput').value = ''
+        clearImage()
+        // Scroll to bottom sẽ được gọi trong socket.on("group_message")
+      }
     </script>
-</body>
+  </body>
 </html>
